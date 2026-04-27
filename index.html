@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>K-Log</title>
+    <title>Kura Zen</title>
     <style>
+        /* --- 日本傳統色譜 --- */
         :root {
-            --washi: #F8F4E6;
-            --sumi: #333333;
-            --torii: #D24D3E;
-            --indigo: #2C3E50;
+            --washi: #F4F1E1;       /* 和紙白 */
+            --sumi: #2B2B2B;        /* 墨黑 */
+            --shu: #E14A39;         /* 朱紅 (印章色) */
+            --ai: #1D3244;          /* 藍染 (深藍) */
+            --kin: #C6A664;         /* 淺金 (邊框) */
+            --plate-bg: #FCFBFA;    /* 陶盤白 */
         }
 
         * { 
@@ -21,140 +24,217 @@
         }
 
         body {
-            margin: 0; background: var(--washi);
-            color: var(--sumi); font-family: -apple-system, sans-serif;
+            margin: 0; 
+            background-color: var(--washi);
+            /* 微弱的和式波浪背景紋理 */
+            background-image: radial-gradient(#d5d1c4 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--sumi); 
+            font-family: "Noto Serif TC", "Shippori Mincho", "Mincho", serif; /* 襯線字體增添傳統感 */
             display: flex; justify-content: center;
         }
 
         #app {
             width: 100%; max-width: 420px; min-height: 100vh;
             display: flex; flex-direction: column; padding: 40px 25px;
+            background: rgba(244, 241, 225, 0.85); /* 讓背景波浪稍微透出 */
+            backdrop-filter: blur(5px);
         }
 
-        .gacha-info {
-            display: flex; justify-content: space-between; 
-            font-size: 0.75rem; letter-spacing: 2px; color: var(--indigo);
-            margin-bottom: 10px; opacity: 0.8; font-weight: bold;
+        /* --- 標題：落款印章風格 --- */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 30px; border-bottom: 1px solid var(--kin); padding-bottom: 15px;
         }
-        .progress-track {
-            height: 3px; width: 100%; background: #E0E0E0;
-            margin-bottom: 50px; border-radius: 2px;
+        .title-group { display: flex; align-items: center; gap: 10px; }
+        .hanko {
+            background: var(--shu); color: white; 
+            font-size: 1.2rem; font-weight: bold;
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; font-family: sans-serif;
+            border: 2px solid rgba(255,255,255,0.5); outline: 1px solid var(--shu);
         }
-        #progressBar { height: 100%; background: var(--torii); width: 0%; transition: 0.4s; }
+        .app-title { font-size: 1.1rem; letter-spacing: 3px; color: var(--sumi); font-weight: 700; }
+        .kanji-sub { font-size: 0.7rem; color: #888; letter-spacing: 1px; }
 
-        .matrix {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 20px;
+        /* --- 扭蛋進度：集點卡風格 --- */
+        .gacha-section { margin-bottom: 40px; }
+        .gacha-header { 
+            display: flex; justify-content: space-between; font-size: 0.8rem; 
+            color: var(--ai); font-weight: bold; margin-bottom: 12px; letter-spacing: 1px;
         }
-
-        .circle {
-            position: relative; width: 100%; aspect-ratio: 1;
-            border-radius: 50%; background: #FFF; border: 1.5px solid #DDD;
+        .stamps-container {
+            display: flex; justify-content: space-between; gap: 10px;
+        }
+        .stamp-slot {
+            flex: 1; aspect-ratio: 1; border-radius: 50%;
+            border: 1.5px dashed var(--kin);
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; font-weight: 500; transition: transform 0.1s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02); cursor: pointer;
+            transition: 0.3s; position: relative;
         }
-        .circle:active { transform: scale(0.9); }
-        .circle.active { border-color: var(--torii); color: var(--torii); border-width: 2.5px; font-weight: 800; }
+        /* 蓋章動畫 */
+        .stamp-slot.filled::after {
+            content: ""; position: absolute; width: 70%; height: 70%;
+            background: var(--shu); border-radius: 50%;
+            animation: stampIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes stampIn {
+            0% { transform: scale(2); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .draw-ready { color: var(--shu); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+        /* --- 價位矩陣：陶盤風格 --- */
+        .matrix {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px 20px;
+        }
+        .plate {
+            position: relative; width: 100%; aspect-ratio: 1;
+            border-radius: 50%; background: var(--plate-bg);
+            border: 1px solid #EAE2D0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: sans-serif; font-size: 1.4rem; font-weight: 500; color: var(--sumi);
+            box-shadow: 
+                inset 0 0 10px rgba(0,0,0,0.02),
+                0 4px 8px rgba(0,0,0,0.04);
+            cursor: pointer; transition: all 0.15s;
+        }
+        /* 盤子的內圈 */
+        .plate::before {
+            content: ""; position: absolute; width: 82%; height: 82%;
+            border-radius: 50%; border: 1px solid rgba(198, 166, 100, 0.3); /* 淺金色內圈 */
+            transition: 0.2s;
+        }
+        
+        .plate:active { transform: scale(0.92); box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); }
+        .plate.active { border-color: var(--shu); color: var(--shu); font-weight: 800; box-shadow: 0 4px 12px rgba(225, 74, 57, 0.15); }
+        .plate.active::before { border-color: var(--shu); opacity: 0.3; }
+
+        /* 數量標籤：和風小圓籤 */
         .badge {
-            position: absolute; top: -5px; right: -5px;
-            background: var(--torii); color: #FFF; font-size: 0.75rem;
-            width: 22px; height: 22px; border-radius: 50%;
+            position: absolute; top: -4px; right: -4px;
+            background: var(--sumi); color: var(--washi); font-size: 0.75rem;
+            width: 24px; height: 24px; border-radius: 50%;
             display: none; align-items: center; justify-content: center;
+            border: 2px solid var(--washi); font-family: sans-serif;
         }
-        .active .badge { display: flex; }
+        .plate.active .badge { display: flex; }
 
+        /* --- 底部合計 --- */
         .footer {
-            margin-top: auto; padding-top: 40px;
+            margin-top: auto; padding-top: 30px;
             display: flex; justify-content: space-between; align-items: flex-end;
         }
-
-        .total-val { font-size: 3.8rem; font-weight: 900; color: var(--indigo); letter-spacing: -3px; line-height: 1; }
-        .total-val::before { content: "$"; font-size: 1.5rem; font-weight: 300; vertical-align: top; margin-right: 5px; color: #BBB; }
+        .total-box { display: flex; flex-direction: column; }
+        .kanji-label { font-size: 0.8rem; color: #888; margin-bottom: -5px; letter-spacing: 2px; }
+        .total-val { font-size: 3.8rem; font-weight: 900; color: var(--ai); letter-spacing: -2px; font-family: sans-serif; }
+        .total-val::before { content: "¥"; font-size: 1.5rem; font-weight: 400; vertical-align: top; margin-right: 5px; color: var(--kin); }
         
-        .action-group { display: flex; gap: 15px; }
+        .action-group { display: flex; gap: 12px; margin-bottom: 10px; }
         .icon-btn {
-            width: 50px; height: 50px; border-radius: 15px;
-            border: 1.5px solid #DDD; background: #FFF;
+            width: 45px; height: 45px; border-radius: 50%;
+            border: 1px solid var(--kin); background: transparent;
             display: flex; align-items: center; justify-content: center; 
-            font-size: 1.2rem; color: #888; cursor: pointer;
+            font-size: 1.1rem; color: var(--sumi); cursor: pointer;
         }
-        .btn-clear { color: #BBB; border-style: dashed; }
 
+        /* --- 截圖模式：高雅素白 --- */
         .screenshot-mode { background: #FFF !important; }
-        .screenshot-mode .progress-track, .screenshot-mode .gacha-info, .screenshot-mode .action-group { display: none; }
-        .screenshot-mode .circle:not(.active) { opacity: 0.1; }
-        .screenshot-mode .circle.active { border-color: #000 !important; color: #000 !important; }
-        .screenshot-mode .badge { background: #000; }
+        .screenshot-mode header, .screenshot-mode .gacha-section, .screenshot-mode .action-group { display: none; }
+        .screenshot-mode .plate:not(.active) { opacity: 0.05; box-shadow: none; border-color: transparent; }
+        .screenshot-mode .plate.active { border-color: #000 !important; color: #000 !important; box-shadow: none; }
+        .screenshot-mode .plate.active::before { border-color: #000; opacity: 0.1; }
+        .screenshot-mode .badge { background: #000; color: #FFF; border-color: #FFF; }
         .screenshot-mode .total-val { color: #000; }
+        .screenshot-mode .total-val::before { color: #000; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <div class="gacha-info">
-        <span id="nextText">NEXT: 5 PLATES</span>
-        <span id="drawText">0 DRAWS</span>
+    <header>
+        <div class="title-group">
+            <div class="hanko">藏</div>
+            <div class="app-title">KURA LOG</div>
+        </div>
+        <div class="kanji-sub">食事記録</div>
+    </header>
+
+    <div class="gacha-section">
+        <div class="gacha-header">
+            <span id="nextText">GACHA / 抽獎</span>
+            <span id="drawText">0 回</span>
+        </div>
+        <div class="stamps-container" id="stamps">
+            <div class="stamp-slot"></div>
+            <div class="stamp-slot"></div>
+            <div class="stamp-slot"></div>
+            <div class="stamp-slot"></div>
+            <div class="stamp-slot"></div>
+        </div>
     </div>
-    <div class="progress-track"><div id="progressBar"></div></div>
 
     <div class="matrix" id="matrix"></div>
 
     <div class="footer">
-        <div class="total-val" id="total">0</div>
+        <div class="total-box">
+            <span class="kanji-label">お会計 (合計)</span>
+            <div class="total-val" id="total">0</div>
+        </div>
         <div class="action-group">
-            <button class="icon-btn btn-clear" onclick="resetData()">清</button>
-            <button class="icon-btn" onclick="toggleMode()">📷</button>
+            <button class="icon-btn" onclick="resetData()">戻</button>
+            <button class="icon-btn" onclick="toggleMode()">写</button>
         </div>
     </div>
 </div>
 
 <script>
     const prices = [30, 40, 50, 60, 80, 90, 100, 130, 180];
-    let data = JSON.parse(localStorage.getItem('kura_v5_pro')) || {};
+    let data = JSON.parse(localStorage.getItem('kura_v6_wafu')) || {};
     prices.forEach(p => { if(!data[p]) data[p] = 0; });
 
-    let isTouching = false; // 用來精準判斷目前是否在手機上
+    let isTouching = false; 
 
     function render() {
         const m = document.getElementById('matrix');
         m.innerHTML = '';
         prices.forEach(p => {
             const div = document.createElement('div');
-            div.className = `circle ${data[p] > 0 ? 'active' : ''}`;
+            div.className = `plate ${data[p] > 0 ? 'active' : ''}`;
             div.innerHTML = `${p}<div class="badge">${data[p]}</div>`;
             
             let timer;
             let isLongPress = false;
 
-            // 📱 手機端邏輯
+            // 手機觸控邏輯
             div.addEventListener('touchstart', (e) => {
                 isTouching = true; 
                 isLongPress = false;
                 timer = setTimeout(() => {
                     isLongPress = true;
-                    update(p, -1); // 手機長按扣除
+                    update(p, -1);
                     if (navigator.vibrate) navigator.vibrate(50);
                 }, 600);
             }, {passive: true});
 
             div.addEventListener('touchend', (e) => {
                 clearTimeout(timer);
-                if (!isLongPress) update(p, 1); // 手機短按增加
-                if (e.cancelable) e.preventDefault(); // 阻擋點擊穿透
+                if (!isLongPress) update(p, 1);
+                if (e.cancelable) e.preventDefault();
             });
 
             div.addEventListener('touchcancel', () => clearTimeout(timer));
 
-            // 💻 電腦端邏輯
+            // 電腦滑鼠邏輯
             div.addEventListener('mousedown', (e) => {
-                if (isTouching) return; // 如果是手機，直接忽略滑鼠事件
-                if (e.button === 0) update(p, 1); // 電腦左鍵增加
+                if (isTouching) return; 
+                if (e.button === 0) update(p, 1);
             });
 
             div.addEventListener('contextmenu', (e) => {
-                e.preventDefault(); // 永遠擋住系統右鍵選單
-                if (!isTouching) update(p, -1); // 電腦右鍵直接扣除
+                e.preventDefault();
+                if (!isTouching) update(p, -1);
             });
 
             m.appendChild(div);
@@ -164,7 +244,7 @@
 
     function update(p, d) {
         data[p] = Math.max(0, data[p] + d);
-        localStorage.setItem('kura_v5_pro', JSON.stringify(data));
+        localStorage.setItem('kura_v6_wafu', JSON.stringify(data));
         render();
     }
 
@@ -172,27 +252,45 @@
         let total = 0, plates = 0;
         prices.forEach(p => {
             total += p * data[p];
-            plates += (p === 80 ? 2 : 1) * data[p];
+            plates += (p === 80 ? 2 : 1) * data[p]; // 80元等於2盤
         });
 
         document.getElementById('total').innerText = total.toLocaleString();
         
+        // 更新集點卡邏輯
         const currentCycle = plates % 5;
         const totalDraws = Math.floor(plates / 5);
-        const remain = 5 - currentCycle;
+        
+        const slots = document.querySelectorAll('.stamp-slot');
+        slots.forEach((slot, index) => {
+            if (index < currentCycle) {
+                slot.classList.add('filled');
+            } else {
+                slot.classList.remove('filled');
+            }
+        });
 
-        document.getElementById('progressBar').style.width = (currentCycle / 5 * 100) + '%';
-        document.getElementById('nextText').innerText = (currentCycle === 0 && plates > 0) ? "READY TO DRAW" : `NEXT: ${remain} PLATES`;
-        document.getElementById('drawText').innerText = `${totalDraws} DRAWS`;
+        const nextText = document.getElementById('nextText');
+        if (currentCycle === 0 && plates > 0) {
+            nextText.innerText = "CHANCE / 投入可抽獎";
+            nextText.className = "draw-ready";
+            // 滿5盤時，讓5個印章都顯示
+            slots.forEach(slot => slot.classList.add('filled'));
+        } else {
+            nextText.innerText = `NEXT: 差 ${5 - currentCycle} 皿`;
+            nextText.className = "";
+        }
+
+        document.getElementById('drawText').innerText = `${totalDraws} 回`;
     }
 
     window.toggleMode = () => document.body.classList.toggle('screenshot-mode');
 
     window.resetData = () => {
-        if(confirm('確定要清空今日紀錄嗎？')) {
+        if(confirm('記録を消去しますか？ (確定清空紀錄？)')) {
             data = {}; 
             prices.forEach(p => data[p] = 0);
-            localStorage.removeItem('kura_v5_pro');
+            localStorage.removeItem('kura_v6_wafu');
             render();
         }
     };
