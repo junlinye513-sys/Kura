@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kura Zen Dashboard</title>
+    <style>
+        :root {
+            --washi: #F8F4E6;
+            --sumi: #333333;
+            --torii: #D24D3E;
+            --indigo: #2C3E50;
+        }
+
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; user-select: none; }
+
+        body {
+            margin: 0; background: var(--washi);
+            color: var(--sumi); font-family: -apple-system, sans-serif;
+            display: flex; justify-content: center;
+        }
+
+        #app {
+            width: 100%; max-width: 420px; min-height: 100vh;
+            display: flex; flex-direction: column; padding: 40px 25px;
+        }
+
+        /* 頂部進度文字：極簡化 */
+        .gacha-info {
+            display: flex; justify-content: space-between; 
+            font-size: 0.75rem; letter-spacing: 2px; color: var(--indigo);
+            margin-bottom: 10px; opacity: 0.8;
+        }
+
+        /* 進度條設計 */
+        .progress-track {
+            height: 3px; width: 100%; background: #E0E0E0;
+            margin-bottom: 50px; border-radius: 2px; overflow: hidden;
+        }
+        #progressBar { height: 100%; background: var(--torii); width: 0%; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* 價格矩陣 */
+        .matrix {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 20px;
+        }
+
+        .circle {
+            position: relative; width: 100%; aspect-ratio: 1;
+            border-radius: 50%; background: #FFF; border: 1px solid #DDD;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: 400; transition: 0.1s;
+        }
+        .circle:active { transform: scale(0.9); }
+        .circle.active { border-color: var(--torii); color: var(--torii); border-width: 2px; font-weight: 700; }
+
+        .badge {
+            position: absolute; top: -5px; right: -5px;
+            background: var(--torii); color: #FFF; font-size: 0.7rem;
+            width: 20px; height: 20px; border-radius: 50%;
+            display: none; align-items: center; justify-content: center;
+        }
+        .active .badge { display: flex; }
+
+        /* 底部顯示：大數字與扭蛋狀態 */
+        .footer {
+            margin-top: auto; padding-top: 40px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+        }
+
+        .stats { display: flex; flex-direction: column; }
+        .total-val { font-size: 3.5rem; font-weight: 900; color: var(--indigo); letter-spacing: -2px; line-height: 1; }
+        .total-val::before { content: "$"; font-size: 1.5rem; font-weight: 300; vertical-align: top; margin-right: 5px; color: #BBB; }
+        
+        /* 扭蛋次數小標籤 */
+        .gacha-count {
+            display: inline-block; margin-top: 10px;
+            font-size: 0.8rem; font-weight: 700; color: #FFF;
+            background: var(--indigo); padding: 2px 10px; border-radius: 5px;
+        }
+
+        .btn-shot {
+            width: 55px; height: 55px; border-radius: 50%;
+            border: 1px solid #DDD; background: #FFF;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+        }
+
+        /* 截圖模式 */
+        .screenshot-mode { background: #FFF !important; }
+        .screenshot-mode .progress-track, .screenshot-mode .gacha-info, .screenshot-mode .btn-shot, .screenshot-mode .gacha-count { display: none; }
+        .screenshot-mode .circle:not(.active) { opacity: 0.1; }
+        .screenshot-mode .circle.active { border-color: #000 !important; color: #000 !important; }
+        .screenshot-mode .badge { background: #000; }
+        .screenshot-mode .total-val { color: #000; border: 2px solid #000; padding: 10px 20px; border-radius: 15px; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div class="gacha-info">
+        <span id="nextText">NEXT: 5 PLATES</span>
+        <span id="drawText">DRAWS: 0</span>
+    </div>
+    <div class="progress-track"><div id="progressBar"></div></div>
+
+    <div class="matrix" id="matrix"></div>
+
+    <div class="footer">
+        <div class="stats">
+            <div class="total-val" id="total" onclick="reset()">0</div>
+            <div class="gacha-count" id="drawBadge">0 GA-CHA</div>
+        </div>
+        <button class="btn-shot" onclick="toggleMode()">📷</button>
+    </div>
+</div>
+
+<script>
+    const prices = [30, 40, 50, 60, 80, 90, 100, 130, 180];
+    let data = JSON.parse(localStorage.getItem('kura_pro_v1')) || {};
+    prices.forEach(p => { if(!data[p]) data[p] = 0; });
+
+    function render() {
+        const m = document.getElementById('matrix');
+        m.innerHTML = '';
+        prices.forEach(p => {
+            const div = document.createElement('div');
+            div.className = `circle ${data[p] > 0 ? 'active' : ''}`;
+            div.innerHTML = `${p}<div class="badge">${data[p]}</div>`;
+            
+            div.onclick = (e) => { update(p, 1); };
+            div.oncontextmenu = (e) => { e.preventDefault(); update(p, -1); };
+            
+            m.appendChild(div);
+        });
+        calculate();
+    }
+
+    function update(p, d) {
+        data[p] = Math.max(0, data[p] + d);
+        localStorage.setItem('kura_pro_v1', JSON.stringify(data));
+        render();
+    }
+
+    function calculate() {
+        let total = 0, plates = 0;
+        prices.forEach(p => {
+            total += p * data[p];
+            // 80元預設算2盤，其餘1盤
+            plates += (p === 80 ? 2 : 1) * data[p];
+        });
+
+        document.getElementById('total').innerText = total.toLocaleString();
+        
+        // 扭蛋邏輯
+        const currentCycle = plates % 5;
+        const totalDraws = Math.floor(plates / 5);
+        const remain = 5 - currentCycle;
+
+        document.getElementById('progressBar').style.width = (currentCycle / 5 * 100) + '%';
+        document.getElementById('nextText').innerText = currentCycle === 0 && plates > 0 ? "READY TO DRAW" : `NEXT: ${remain} PLATES`;
+        document.getElementById('drawText').innerText = `DRAWS: ${totalDraws}`;
+        document.getElementById('drawBadge').innerText = `${totalDraws} GA-CHA`;
+        
+        // 如果剛好湊滿，進度條發光
+        document.getElementById('progressBar').style.boxShadow = currentCycle === 0 && plates > 0 ? "0 0 10px var(--torii)" : "none";
+    }
+
+    window.toggleMode = () => document.body.classList.toggle('screenshot-mode');
+
+    window.reset = () => {
+        if(confirm('RESET?')) {
+            data = {}; prices.forEach(p => data[p] = 0);
+            localStorage.removeItem('kura_pro_v1');
+            render();
+        }
+    };
+
+    render();
+</script>
+</body>
+</html>
